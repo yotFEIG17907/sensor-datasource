@@ -1,12 +1,37 @@
 #! /usr/local/bin/python
 # -*- coding: utf-8 -*-
 from calendar import timegm
+from contextlib import contextmanager
 from datetime import datetime
 import _strptime  # https://bugs.python.org/issue7980
-from flask import Flask, request, jsonify
-app = Flask(__name__)
+from flask import Flask, request, jsonify, _app_ctx_stack
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
 
+from models.models import Base, Sensor, LoraEvent
+
+db_url = "sqlite:///../ttn/src/sensors/target/data/lora.mqtt.db"
+engine = create_engine(db_url, echo=False)
+Base.metadata.create_all(engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+app = Flask(__name__)
+app.session = scoped_session(SessionLocal, scopefunc=_app_ctx_stack.__ident_func__)
 app.debug = True
+
+
+@contextmanager
+def session_scope():
+    """ Provide a transactional scope around a series of operations"""
+    session = app.session
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def convert_to_time_ms(timestamp):
@@ -15,7 +40,10 @@ def convert_to_time_ms(timestamp):
 
 @app.route('/')
 def health_check():
-    return 'This datasource is healthy.'
+    with session_scope() as session:
+        sensors = session.query(Sensor).all()
+        lora_events = session.query(LoraEvent).all()
+    return f'This datasource is healthy. There are {len(sensors)} sensors and {len(lora_events)} Lora Events'
 
 
 @app.route('/search', methods=['POST'])
