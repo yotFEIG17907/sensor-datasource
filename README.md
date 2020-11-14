@@ -19,3 +19,5 @@ need to make the flask app listen on 0.0.0.0
 Within PyCharm flask is run using the command-line, need to add --host 0.0.0.0 to the run configuration.
 
 https://github.com/Jonnymcc/grafana-simplejson-datasource-example
+
+The URL to put into Grafana for the datasource needs to use a hostname that works from the VM: [http://`hostname`:5000](http://`hostname`:5000) but I have found that it is a bit unreliable. Click "Save and Test" and sometimes it is ok and sometimes not.  Note; this is the URL that Grafana will use to reach the datasource so it needs to be a host that is accessible to Grafana.
