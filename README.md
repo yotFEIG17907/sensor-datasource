@@ -30,4 +30,50 @@ To summarize, this first flow is :
 
 Next I want try sending the data to Graphite and using either Graphite's own dashboard to view the graphs or use Graphite as a DataSource into Grafana.
 
+## Docker Compose for running Grafana and Graphite
+
+Information on Graphite: [https://hub.docker.com/r/graphiteapp/graphite-statsd/](https://hub.docker.com/r/graphiteapp/graphite-statsd/)
+
+I left the internal GUNICORN port 8080 unexposed; and externally use port 8080 to access the Graphite dashboard
+
+```yaml
+version: "3"
+services:
+  # Install the Simple JSON Datasource
+  grafana:
+    image: grafana/grafana
+    environment:
+    - GF_INSTALL_PLUGINS=grafana-simple-json-datasource
+    container_name: grafana
+    restart: always
+    ports:
+      - 3000:3000
+    networks:
+      - grafana-net
+    volumes:
+      - grafana-volume
+
+  graphite:
+    image: graphiteapp/graphite-statsd
+    container_name: graphite
+    restart: always
+    ports:
+    ports:
+      - 8080:80
+      - 2003:2003
+      - 2004:2004
+      - 2023:2023
+      - 2024:2024
+      - 8125:8125
+      - 8126:8126
+    networks:
+      - grafana-net
+
+networks:
+  grafana-net:
+
+volumes:
+  grafana-volume:
+    external: true
+```
 
